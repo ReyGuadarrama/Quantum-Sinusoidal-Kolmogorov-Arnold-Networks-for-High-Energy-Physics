@@ -1,0 +1,24 @@
+# config.yaml
+
+experiment:
+  task: "top"             # Tasks: "qg", "top", "higgs"
+  seed: 42                # Ramdon seed
+  sample_size: 10000      # Sample for kan fitting
+
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  outputs_dir: "outputs"
+
+classical_kan:
+  grid_size: 5
+  k_spline_order: 3
+  learning_rate: 0.0004
+  epochs: 50
+  optimizer: "AdamW"
+
+quantum_vqc:
+  target_qubits: 2
+  dru_layers: 4
+  clamping_boundary: 0.9999
+  shots: 1024
