@@ -59,14 +59,14 @@ def get_config(task, seed):
         "seed": seed,
 
         # Origin and Destination of Data
-        "raw_data_dir": os.Path(root, "data", "raw", f"{task}_tagging"),
+        "raw_data_dir": os.path.join(root, "data", "raw", f"{task}_tagging"),
         "processed_data_dir": data_out_dir,
-        "scaler_path": os.Path(data_out_dir, "global_scaler.pkl"),
-        "cache_file": os.Path(data_out_dir, "preprocessed_data.pt"),
+        "scaler_path": os.path.join(data_out_dir, "global_scaler.pkl"),
+        "cache_file": os.path.join(data_out_dir, "preprocessed_data.pt"),
         
         # Output targets for models and reports
-        "models_dir": os.Path(outputs_dir, "models"),
-        "plots_dir": os.Path(outputs_dir, "plots"),
-        "results_dir": os.Path(outputs_dir, "results")
+        "models_dir": os.path.join(outputs_dir, "models"),
+        "plots_dir": os.path.join(outputs_dir, "plots"),
+        "results_dir": os.path.join(outputs_dir, "results")
     }
     return CONFIG
