@@ -41,7 +41,7 @@ def make_dirs(config):
 # ============================================================================
 # Define all hyperparameters and paths in one place.
 # This makes it easy to modify and experiment.
-def get_config(seed):
+def get_config(task, seed):
     """
     Returns a tight configuration dictionary isolating the raw data path, 
     the processed multiscale tensors, and specific KAN 2.0 / VQC output targets.
@@ -50,32 +50,23 @@ def get_config(seed):
     seed_dir = f"seed_{seed}"
     
     # Core directories
-    data_out_dir = os.path.join(root, "data", seed_dir)
-    models_out_dir = os.path.join(root, "production_models", seed_dir)
-    reports_out_dir = os.path.join(root, "reports", seed_dir)
-
+    data_out_dir = os.path.join(root, "data", "processed", task, seed_dir)
+    outputs_dir = os.path.join(root, "outputs", task, seed_dir)
     CONFIG = {
         # Base Engine Paths
         "root": root,
-        "raw_data_train": os.path.join(root, "data", "train.h5"),
-        "raw_data_top_val": os.path.join(root, "data", "val.h5"),
-        "raw_data_top_test": os.path.join(root, "data", "test.h5"),
+        "task": task,
+        "seed": seed,
+
+        # Origin and Destination of Data
+        "raw_data_dir": os.Path(root, "data", "raw", f"{task}_tagging"),
         "processed_data_dir": data_out_dir,
-        "scaler_path": os.path.join(data_out_dir, "scaler_top.pkl"),
+        "scaler_path": os.Path(data_out_dir, "global_scaler.pkl"),
+        "cache_file": os.Path(data_out_dir, "preprocessed_data.pt"),
         
-        # Matrix Tensors Outputs
-        "train_extended_matrix": os.path.join(data_out_dir, "tt_processed_inputs.npy"), # [N, 32]
-        
-        # Model Production Targets (Saves learned weights/state_dicts)
-        "kan_classical_model": os.path.join(models_out_dir, "kan", "multkan_checkpoint.pt"),
-        "vqc_quantum_model": os.path.join(models_out_dir, "vqc", "vqc_dru_checkpoint.pt"),
-        
-        # Benchmarks Comparison Checkpoints (Baselines SMART Phase 1)
-        "mlp_baseline": os.path.join(models_out_dir, "baselines", "mlp_model.pt"),
-        "rf_baseline": os.path.join(models_out_dir, "baselines", "rf_model.pkl"),
-        
-        # Performance and EDA Plot Reports (SMART Phase 4 Validation)
-        "eda_reports_dir": os.path.join(reports_out_dir, "eda"),         # Subplots de Pareto y NMI
-        "model_reports_dir": os.path.join(reports_out_dir, "evaluation") # Curvas ROC/AUC benchmarks
+        # Output targets for models and reports
+        "models_dir": os.Path(outputs_dir, "models"),
+        "plots_dir": os.Path(outputs_dir, "plots"),
+        "results_dir": os.Path(outputs_dir, "results")
     }
     return CONFIG
