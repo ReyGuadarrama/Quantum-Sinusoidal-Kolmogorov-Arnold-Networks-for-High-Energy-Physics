@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path
-from workspace import get_config, set_seed
+from src.utils.workspace import get_config, set_seed
 
 # ============================================================================
 # ============================================================================
