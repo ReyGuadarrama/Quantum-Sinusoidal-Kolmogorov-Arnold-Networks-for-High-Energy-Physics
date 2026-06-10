@@ -1,8 +1,12 @@
+from pathlib import Path
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
-from workspace import get_config
+import sys
+
+# Add project root to path for imports
+sys.path.append(str(Path(__file__).parent.parent.resolve()))
+from src.utils.workspace import get_config
 
 def verify_physics(config):
     # 1. Cargar el bloque de entrenamiento procesado
@@ -39,7 +43,10 @@ def verify_physics(config):
     plt.subplot(1, 2, 2)
     plt.hist(X[:, 2].numpy(), bins=50, alpha=0.7, color='orange', label='dR_1 (Líder)')
     plt.legend()
-    plt.show()
+    # 4. Guardar, no mostrar
+    plt.tight_layout()
+    plt.savefig("verificacion_fisica.png")
+    print("Gráfica guardada como 'verificacion_fisica.png'. Ábrela para inspeccionar.")
 
 if __name__ == "__main__":
     config = get_config(task="top", seed=42)

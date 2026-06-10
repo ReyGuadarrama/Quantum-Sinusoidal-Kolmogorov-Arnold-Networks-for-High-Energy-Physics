@@ -1,6 +1,7 @@
 # processor_top.py
 import os
 import h5py
+import hdf5plugin
 import pickle
 import numpy as np
 import torch
@@ -94,12 +95,12 @@ def _compute_physics_features(raw_matrix, is_train, config):
 # ============================================================================
 # ============================================================================
 
-def load_and_preprocess_data(data_dir, processed_dir, seed=42, force_process=False):
+def load_and_preprocess_data(data_dir, processed_dir, task, seed=42, force_process=False):
     """ 
     Processes separate train.h5, val.h5, and test.h5 files sequentially.
     """
     set_seed(seed)
-    config = get_config(seed)
+    config = get_config(task, seed)
     
     DATA_DIR = Path(data_dir)
     PROCESSED_DIR = Path(processed_dir)
@@ -145,9 +146,10 @@ def load_and_preprocess_data(data_dir, processed_dir, seed=42, force_process=Fal
             
         with h5py.File(file_path, "r") as f:
             # Reconstruct structured event tables
-            raw_matrix = f["table"][:]
+            f = f["table"]["table"] # Navigate to the nested group containing the data
+            raw_matrix = f["values_block_0"][:]
             # SOTA label: index 1 holds the categorical value (1: Top Signal, 0: QCD Background)
-            raw_labels = f["labels"][:, 1] 
+            raw_labels = f["values_block_1"][:, 1] 
             
         print(f"Data chunk successfully mounted in RAM. Extracted shape: {raw_matrix.shape}")
         
