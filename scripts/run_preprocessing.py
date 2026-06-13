@@ -18,7 +18,7 @@ def main():
         data_dir=top_path,
         processed_dir=config["processed_data_dir"],
         task="top",
-        force_process=False # Cambia a True solo si modificaste la lógica de limpieza
+        force_process=True
     )
     
     print("Pipeline de preprocesamiento finalizado exitosamente.")
