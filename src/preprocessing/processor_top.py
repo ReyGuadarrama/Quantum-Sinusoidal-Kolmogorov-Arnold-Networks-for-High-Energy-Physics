@@ -16,7 +16,7 @@ from src.utils.workspace import get_config, set_seed
 # ============================================================================
 # ============================================================================
 
-def _compute_physics_features(raw_matrix, is_train, config):
+def _compute_physics_features(raw_matrix, config, scaler=None):
     """
     Core math transformation. Combines macro-physics and Pareto sub-structure 
     into a structured [N, 32] matrix ready for KAN / Random Forest baselines.
@@ -134,14 +134,10 @@ def _compute_physics_features(raw_matrix, is_train, config):
     # 4. QUANTUM ASYMPTOTIC COMPRESSION
     m_scaled = np.tanh(np.log(invariant_mass + 1.0))
     
-    if is_train:
+    if scaler is None:
         scaler = StandardScaler()
         M_normalized = scaler.fit_transform(multiplicity.reshape(-1, 1)).flatten()
-        with open(config["scaler_path"], "wb") as f:
-            pickle.dump(scaler, f)
     else:
-        with open(config["scaler_path"], "rb") as f:
-            scaler = pickle.load(f)
         M_normalized = scaler.transform(multiplicity.reshape(-1, 1)).flatten()
         
     M_scaled = np.tanh(M_normalized)
@@ -216,17 +212,18 @@ def load_and_preprocess_data(data_dir, processed_dir, task, seed=42, force_proce
             # Reconstruct structured event tables
             f = f["table"]["table"] # Navigate to the nested group containing the data
             raw_matrix = f["values_block_0"][:]
-            # SOTA label: index 1 holds the categorical value (1: Top Signal, 0: QCD Background)
+            # Index 1 holds the categorical value (1: Top Signal, 0: QCD Background)
             raw_labels = f["values_block_1"][:, 1] 
             
         print(f"Data chunk successfully mounted in RAM. Extracted shape: {raw_matrix.shape}")
         
         # Transform vector components
-        is_train = (split == "train")
-        X_norm, split_scaler, split_mask = _compute_physics_features(raw_matrix, is_train, config)
+        X_norm, split_scaler, split_mask = _compute_physics_features(raw_matrix, config, scaler=scaler)
         
-        if is_train:
-            scaler = split_scaler
+        if split == "train":
+            with open(scaler_file, "wb") as f:
+                pickle.dump(split_scaler, f)
+            print(f"Global scaler object saved to: '{scaler_file}'")
 
         # Convert straight to standalone float Torch tensors
         processed_tensors[f"X_{split}"] = torch.from_numpy(X_norm).float()
