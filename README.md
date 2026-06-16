@@ -21,7 +21,11 @@ uv sync
 
 The current file includes
 * notebooks: dir with initial exploration
-* src: dir with pipelines
+* src: dir with the code for the project, including data processing, model training and evaluation.
+* data: dir where the datasets are stored, including raw and processed data.
+* outputs: dir where the results of the project are stored, including trained models, evaluation metrics, and plots.
+* scripts: dir with utility scripts for data downloading, preprocessing, and other tasks.
+* README.md: this file, which provides an overview of the project, instructions for setup and usage, and other relevant information.
 
 ---
 
