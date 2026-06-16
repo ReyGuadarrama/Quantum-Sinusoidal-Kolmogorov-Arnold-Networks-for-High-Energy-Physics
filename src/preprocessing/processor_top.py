@@ -215,9 +215,9 @@ def load_and_preprocess_data(data_dir, processed_dir, task, seed=42, force_proce
         with h5py.File(file_path, "r") as f:
             # Reconstruct structured event tables
             f = f["table"]["table"] # Navigate to the nested group containing the data
-            raw_matrix = f["values_block_0"][:20000]
+            raw_matrix = f["values_block_0"][:]
             # SOTA label: index 1 holds the categorical value (1: Top Signal, 0: QCD Background)
-            raw_labels = f["values_block_1"][:20000, 1] 
+            raw_labels = f["values_block_1"][:, 1] 
             
         print(f"Data chunk successfully mounted in RAM. Extracted shape: {raw_matrix.shape}")
         
@@ -236,6 +236,9 @@ def load_and_preprocess_data(data_dir, processed_dir, task, seed=42, force_proce
             y_tensor = y_tensor.unsqueeze(1) # Match required [N, 1] output dimension
         processed_tensors[f"y_{split}"] = y_tensor
 
+        del raw_matrix, raw_labels, X_norm, split_mask, y_tensor
+        gc.collect()
+
     print("\n--- Final balanced datasets built (Vectorized Slices Framework) ---")
     print(f"X_train shape: {processed_tensors['X_train'].shape} | y_train shape: {processed_tensors['y_train'].shape}")
     print(f"X_val shape:   {processed_tensors['X_val'].shape} | y_val shape:   {processed_tensors['y_val'].shape}")
@@ -243,7 +246,7 @@ def load_and_preprocess_data(data_dir, processed_dir, task, seed=42, force_proce
 
     # --- STEP 3: SYMBOLIC INTERPOLATION SAMPLE (10k Sub-sample) ---
     print(f"\nIsolating clean sub-sample for high-speed symbolic KAN regressions...")
-    sample_size = int(0.1*len(processed_tensors["X_train"]))
+    sample_size = int(0.05*len(processed_tensors["X_train"]))
     X_train_all = processed_tensors["X_train"]
     
     if len(X_train_all) > sample_size:
