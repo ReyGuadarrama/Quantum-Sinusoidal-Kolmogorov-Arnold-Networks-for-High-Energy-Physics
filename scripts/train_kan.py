@@ -8,6 +8,7 @@ import src.architectures.classic_kan as classic
 import src.utils.metrics as viz
 from src.architectures.classic_kan import clean_memory
 
+import torch
 import time
 import os
 import json
@@ -18,6 +19,7 @@ from pathlib import Path
 
 def main(args):
     """Main fuction to run the full training pipeline."""
+    torch.set_num_threads(4)  # Limit PyTorch to use 4 CPU threads for data loading and processing
     workspace.set_seed(args.seed)
     
     CONFIG = workspace.get_config(task="top", seed=args.seed)
@@ -72,10 +74,10 @@ def main(args):
             lamb_coefdiff=CONFIG["base_lamb_coefdiff"],
             update_grid_freq=CONFIG["base_update_grid_freq"],
             model_save_path=base_model_prefix,
-            X_train_tensor=X_train, 
-            y_train_tensor=y_train,
-            X_val_tensor=X_val, 
-            y_val_tensor=y_val,
+            X_train_tensor=X_train[:],
+            y_train_tensor=y_train[:],
+            X_val_tensor=X_val[:10000], 
+            y_val_tensor=y_val[:10000],
             num_workers=CONFIG["num_workers"]
         )
         
@@ -88,7 +90,8 @@ def main(args):
         print("\n--- Evaluation of Base Model ---")
         model_base, eval_data_base, metrics_base = classic.evaluate_kan_model(
             model_save_path=base_model_prefix,
-            X_test_tensor=X_test, y_test_tensor=y_test,
+            X_test_tensor=X_test[:10000],
+            y_test_tensor=y_test[:10000],
             conf_matrix_save_path=CONFIG["base_eval_cm"],
             save_path_roc_curve=CONFIG["base_eval_roc"],
             save_path_pr_curve=CONFIG["base_eval_pr"]
@@ -114,6 +117,26 @@ def main(args):
 
         print("Cleaning up base model from memory...")
         clean_memory(model_base, eval_data_base, metrics_base, history_base)
+
+# ============================================================================
+# STEP 4: PRUNING
+# ============================================================================
+    print("\n--- Step 3: Starting Pruning ---")
+    pruned_model_prefix = os.path.join(CONFIG["pruned_model_path"], "02_pruned")
+    pruned_model_state_path = f"{pruned_model_prefix}_state"
+
+    if os.path.exists(pruned_model_state_path) and not args.force:
+        print(f"Pruned model found. Skiping pruning.")
+    else:
+        pruned_model = classic.prune_and_save_kan(
+            original_model_path=base_model_prefix,
+            pruned_model_path=pruned_model_prefix,
+            activation_data=X_sample, # Use sample for fast pruning
+            node_th=CONFIG["prune_node_th"],
+            edge_th=CONFIG["prune_edge_th"]
+        )
+        # del pruned_model
+        gc.collect()
 
 
 # ============================================================================

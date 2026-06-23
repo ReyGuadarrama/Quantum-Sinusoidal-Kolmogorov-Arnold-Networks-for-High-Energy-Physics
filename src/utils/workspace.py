@@ -5,6 +5,14 @@ import torch
 import random
 from pathlib import Path
 
+features_globales = ['invariant_mass', 'total_multiplicity']
+features_locales = []
+for i in range(1, 11):
+    features_locales.append(f'Delta_R_part_{i}')
+    features_locales.append(f'pT_rel_part_{i}')
+
+TOTAL_FEATURES = features_globales + features_locales
+
 def get_project_root():
     """
     Returns the absolute path to the project root directory.
@@ -88,27 +96,33 @@ def get_config(task, seed):
         "base_model_plot_folder": os.path.join(outputs_dir, "plots", "01_plot_base", "splines"),
         "base_model_plot_save_path": os.path.join(outputs_dir, "plots", "01_plot_base", "base_model.png"),
         
+        # Pruned
+        "pruned_model_path": os.path.join(outputs_dir, "models", "02_pruned"),
 
         # -----------------------------
         # --- Classic KAN ----
         # -----------------------------
-        "features": ['pT_log', 'eta', 'mass_log', 'No. particles'],
-        "width": [[2,30], 9, 1], # Architecture [input, hidden, output]
+        "features": TOTAL_FEATURES,
+        "width": [22, [9,9], 1], # Architecture [input, hidden, output]
         "grid": 3,
         "k": 3,
-        "num_workers": 4,
+        "num_workers": 0,
 
         # --- Base Training Hyperparameters ---
         "base_lr": 1e-3,
         "base_epochs": 50,
-        "base_batch_size": 512,
-        "base_patience": 6,
-        "base_early_stop_delta": 5e-4,
+        "base_batch_size": 4096,
+        "base_patience": 7,
+        "base_early_stop_delta": 5e-3,
         "base_lamb": 0.01, # Regularization weight
-        "base_lamb_l1": 1.0,       
-        "base_lamb_entropy": 2.0,  
+        "base_lamb_l1": 0.1,
+        "base_lamb_entropy": 0.2,
         "base_lamb_coef": 0.005,     
         "base_lamb_coefdiff": 0.01,
-        "base_update_grid_freq": 10,
+        "base_update_grid_freq": 50,
+
+        # --- Pruning Hyperparameters ---
+        "prune_node_th": 1e-2,
+        "prune_edge_th": 3e-2,
     }
     return CONFIG

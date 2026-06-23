@@ -40,7 +40,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def train_kan_model(width, grid, k, learning_rate, num_epochs, batch_size,
                            early_stop_patience, early_stop_min_delta, 
                            model_save_path,
-                           X_train_tensor, y_train_tensor, X_val_tensor, y_val_tensor,
+                           X_train_tensor,
+                           y_train_tensor,
+                           X_val_tensor,
+                           y_val_tensor,
                            lamb=0.01, 
                            lamb_l1=1.0, 
                            lamb_entropy=2.0,
@@ -88,10 +91,10 @@ def train_kan_model(width, grid, k, learning_rate, num_epochs, batch_size,
       # Use a reasonable number of workers based on CPU cores
     train_dataset = torch.utils.data.TensorDataset(X_train_tensor, y_train_tensor)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
-                                               num_workers=num_workers, persistent_workers=True)
+                                               num_workers=num_workers, persistent_workers=False)
     val_dataset = torch.utils.data.TensorDataset(X_val_tensor, y_val_tensor)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False,
-                                             num_workers=num_workers, persistent_workers=True)
+                                             num_workers=num_workers, persistent_workers=False)
     
     # 3. Training and Validation Loop
     best_val_auc = 0.0
@@ -197,11 +200,13 @@ def train_kan_model(width, grid, k, learning_rate, num_epochs, batch_size,
         val_auc = roc_auc_score(all_val_true, all_val_probs)
         train_auc = roc_auc_score(all_train_true, all_train_probs)
 
-        print(f"Epoch [{epoch+1}/{num_epochs}], "
-              f"Training Loss: {train_loss:.5f}, "
-              f"Validation Loss: {val_loss:.5f}, "
-              f"Training AUC: {train_auc:.5f}, "
-              f"Validation AUC: {val_auc:.5f}")
+        # logging for every 5 epochs
+        if (epoch + 1) % 5 == 0 or epoch == 0:
+            print(f"Epoch [{epoch+1}/{num_epochs}], "
+                f"Training Loss: {train_loss:.5f}, "
+                f"Validation Loss: {val_loss:.5f}, "
+                f"Training AUC: {train_auc:.5f}, "
+                f"Validation AUC: {val_auc:.5f}")
 
         # Save losses and AUC
         history['train_loss'].append(train_loss)
@@ -209,8 +214,9 @@ def train_kan_model(width, grid, k, learning_rate, num_epochs, batch_size,
         history['train_auc'].append(train_auc)
         history['val_auc'].append(val_auc)
 
-        # Check for improvement in validation AUC for early stopping and model checkpointing
-        if val_auc > best_val_auc + early_stop_min_delta:
+        # Check for improvement in validation AUC and val loss for early stopping and model checkpointing
+        if ((val_auc > best_val_auc + early_stop_min_delta) \
+        or (val_loss < best_val_loss - early_stop_min_delta)):
             best_val_auc = val_auc
             #epochs_no_improve = 0
             model.saveckpt(model_save_path)
@@ -232,7 +238,7 @@ def train_kan_model(width, grid, k, learning_rate, num_epochs, batch_size,
                     json.dump(metadata, f, indent=4)
             except Exception as e:
                 print(f"Warning: Could not save metadata to JSON file. Error: {e}")
-            print(f"Model checkpoint saved (val_auc: {best_val_auc:.5f}).")    
+            print(f"Epoch [{epoch+1}/{num_epochs}] - Model checkpoint saved (val_auc: {best_val_auc:.5f} - val_loss: {val_loss:.5f}).")    
         #else:
             #epochs_no_improve += 1
 
@@ -354,8 +360,11 @@ def evaluate_kan_model(model_save_path,
 # Pruning and Retraining Functions
 # ============================================================================
 
-def prune_and_save_kan(original_model_path, pruned_model_path, 
-                       activation_data, node_th=1e-2, edge_th=3e-2
+def prune_and_save_kan(original_model_path,
+                        pruned_model_path,
+                        activation_data,
+                        node_th=1e-2,
+                        edge_th=3e-2
                        ):
     """
     Load a trained KAN model, prune it, and save a new checkpoint
